@@ -11,6 +11,14 @@ struct Card
     string suitstr;
 };
 
+struct Combination
+{
+    int combWeight = 0;
+    int combCardsR = 0;
+    Card combCards[5];
+    vector<Card> notCombCards;
+};
+
 class Deck
 {
 private:
@@ -54,9 +62,9 @@ public:
 
 class Player
 {
-protected:
-    Card cards[2];
 public:
+    Card cards[2];
+    Combination comb;
     int cash;
 };
 
@@ -96,24 +104,55 @@ public:
     int cardNum = 0;
     Card cards[5];
 
-    int checkComb(Card a, Card b)
+    int сomb(Player P)
     {
-        int nums[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        int suits[4] = { 0, 0, 0, 0 };
-        for (int i =0; i < cardNum; ++i)
+        vector<Card> allCards;
+        for (int i = 0; i < cardNum; ++i) allCards.push_back(cards[i]);
+        allCards.push_back(P[0].cards[0]);
+        allCards.push_back(P[0].cards[1]);
+
+        int cardNums[13] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        vector<int> pair, three;
+        int square = -1, row, street;
+        for (int i = 0; i < allCards.size(); ++i) ++cardNums[allCards[i].num];
+        for (int i = 0; i < allCards.size(); ++i)
         {
-            ++nums[cards[i].num];
-            ++suits[cards[i].suit];
+            for (int j = 0; j + 1 < allCards.size(); ++j)
+            {
+                if (allCards[j].num > allCards[j+1].num)
+                {
+                    Card q = allCards[j];
+                    allCards[j] = allCards[j+1];
+                    allCards[j+1] = q;
+                }
+            }
         }
-        ++nums[a.num];
-        ++nums[b.num];
-        ++suits[a.suit];
-        ++suits[b.suit];
-        int pairs, threes, flash;
-        for (int i = 0; i < 13; ++i)
+        if (cardNums[0] > 0 && cardNums[1] > 0 && cardNums[2] > 0 && cardNums[3] > 0 && cardNums[12] > 0)
         {
-            if (nums[i] == 2) ++pairs;
-            else if (nums[i] == 3) ++threes;
+            street = 3;
+        }
+        for (int i = allCards.size()-1; i >= 0; --i)
+        {
+            if (cardNums[i] >= 1) ++row;
+            else if (row < 5) row = 0;
+            else { street = i; row = -1000000; }
+
+            if (cardNums[i] == 2) pair.push_back(i);
+            else if (cardNums[i] == 3) three.push_back(i);
+            else if (cardNums[i] == 4) square = i;
+        }
+
+        for (int i = 0; i < allCards.size(); ++i)
+        {
+            for (int j = 0; j + 1 < allCards.size(); ++j)
+            {
+                if (allCards[j].suit > allCards[j+1].suit)
+                {
+                    Card q = allCards[j];
+                    allCards[j] = allCards[j+1];
+                    allCards[j+1] = q;
+                }
+            }
         }
     }
 };
@@ -122,12 +161,10 @@ Deck deck;
 Computer comp;
 Table table;
 
-
 int main()
 {
     deck.init();
     deck.shuffle();
     comp.init();
-    
     return 0;
 }
