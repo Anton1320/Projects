@@ -248,7 +248,7 @@ public:
         }
     }
 
-    void callCheck(Table &T)
+    void callOrCheck(Table &T)
     {
         if (bet < T.maxBet) // если колл
         {
@@ -262,7 +262,7 @@ public:
             else
             {
                 T.bank += cash;
-                bet += cash
+                bet += cash;
                 cash = 0;
             }
         }
@@ -270,6 +270,7 @@ public:
 
     void raise(Table &T, int sum)
     {
+        sum += T.maxBet - bet;
         if (cash > sum)
         {
             cash -= sum;
@@ -279,7 +280,7 @@ public:
         else
         {
             T.bank += cash;
-            bet += cash
+            bet += cash;
             cash = 0;
         }
         if (bet > T.maxBet) T.maxBet = bet;
@@ -338,37 +339,167 @@ int compareComb(Combination a, Combination b) // 0 - a < b; 1 - a > b; 2 - a == 
     else return 0;
 }
 
+const int playerNum = 2;
+const int blindCost = 50;
+
 Deck deck;
-Player player[5];
+Player players[playerNum];
 //Computer bot;
 Table table;
 
+
+void betsTime()
+{
+    int currentPlayer = 0;
+    bool turn = false;
+    int loopCounter = 0;
+    
+    do
+    {
+        turn = false;
+        currentPlayer %= playerNum;
+
+        if (!(players[currentPlayer].isDead || players[currentPlayer].isFolded))
+        {
+            cout << currentPlayer+1 << " player's turn\n\n";
+            cout << players[currentPlayer].cards[0].numstr << " of " <<
+                    players[currentPlayer].cards[0].suitstr << endl;
+            cout << players[currentPlayer].cards[1].numstr << " of " <<
+                    players[currentPlayer].cards[1].suitstr << "\n\n";
+            if (table.cards.size() > 0)
+            {
+                cout << "Cards on table: \n";
+                for (int i = 0; i < table.cards.size(); ++i)
+                {
+                    cout << table.cards[i].numstr << " of " <<
+                            table.cards[i].suitstr << endl;
+                }
+            }
+            cout << "Bank: " << table.bank << '\n';
+            cout << "Max bet is " << table.maxBet << "\n";
+            cout << "Your bet is " << players[currentPlayer].bet << "\n";
+            cout << "Your cash is " << players[currentPlayer].cash << "\n\n";
+            cout << "0 - fold\n1 - call or check\n2 - raise to <num>\n";
+            int action;
+            cin >> action;
+            //cout << '\n';
+            if (action == 0) players[currentPlayer].fold();
+            else if (action == 1) players[currentPlayer].callOrCheck(table);
+            else if (action == 2)
+            {
+                int num;
+                cout << "Your bet is ";
+                cin >> num;
+                players[currentPlayer].raise(table, num);
+            }
+            cout << "_________________________________\n\n";
+        }
+        for (int i = 0; i < playerNum; ++i)
+        {
+            if (players[i].bet != table.maxBet && !players[i].isFolded && !players[i].isDead)
+                turn = true;
+        } 
+        ++currentPlayer;
+        if (currentPlayer == playerNum) ++loopCounter;
+    } while (turn || loopCounter == 0);
+}
+
+void reward()
+{
+    int best = -1;
+    vector<int> bests;
+    for (int i = 1; i < playerNum; ++i)
+    {
+        if (!(players[i].isDead && players[i].isFolded))
+        {
+            players[i].combInit(table);
+            best = i;
+        }
+    }
+
+    for (int i = best+1; i < playerNum; ++i)
+    {
+        if (!(players[i].isDead && players[i].isFolded) && compareComb(players[i].comb, players[best].comb) == 0)
+            best = i;
+    }
+
+    for (int i = 0; i < playerNum; ++i)
+    {
+        if (!(players[i].isDead && players[i].isFolded) && compareComb(players[i].comb, players[best].comb) == 2)
+        {
+            bests.push_back(i);
+        }
+    }
+
+    for (int i = 0; i < bests.size(); ++i)
+    {
+        players[bests[i]].cash += table.bank/bests.size();
+    }
+}
+
 int main()
 {
-    //bot.init();
     deck.init();
-    for (int k = 0; k < 1000000; ++k)
+    deck.shuffle();
+
+    for (int i = 0; i < playerNum; ++i)
     {
-        deck.shuffle();
-        player.cards[0] = deck.extract();
-        player.cards[1] = deck.extract();
-        for (int i = 0; i < 5; ++i)
+        players[i].bet = 0;
+        for (int j = 0; j < 2; ++j)
         {
-            table.cards.push_back(deck.extract());
+            players[i].cards[j] = deck.extract();
         }
-        player.combInit(table);
-        if (player.comb.combWeight == 8)
-        {
-            cout << "--> " << player.cards[0].numstr << " of " << player.cards[0].suitstr << endl;
-            cout << "--> " << player.cards[1].numstr << " of " << player.cards[1].suitstr << endl;
-            for (int i = 0; i < table.cards.size(); ++i)
-            {
-                cout << table.cards[i].numstr << " of " << table.cards[i].suitstr << endl;
-            }
-            cout << player.comb.name << endl;
-            cout << endl;
-        }
-        table.clear();
     }
+
+    int blind = 0, smallBlind = 1;
+    blind %= playerNum;
+    smallBlind %= playerNum;
+
+    if (players[blind].cash >= blindCost)
+        {
+            players[blind].bet = blindCost;
+            players[blind].cash -= blindCost;
+            table.bank += blindCost;
+            table.maxBet = blindCost;
+        }
+        else 
+        {
+            table.bank += players[blind].cash;
+            table.maxBet = players[blind].cash;
+            players[blind].bet = players[blind].cash;
+            players[blind].cash = 0;
+        }
+
+        if (players[smallBlind].cash >= blindCost/2)
+        {
+            players[smallBlind].bet = blindCost/2;
+            players[smallBlind].cash -= blindCost/2;
+            table.bank += blindCost/2;
+        }
+        else 
+        {
+            players[smallBlind].bet = players[smallBlind].cash;
+            table.bank += players[blind].cash;
+            players[blind].cash = 0;
+        }
+        if (blindCost/2 > table.maxBet)
+                table.maxBet = blindCost/2;
+
+    betsTime();
+
+    deck.extract();
+    for (int i = 0; i < 3; ++i)
+        table.cards.push_back(deck.extract());
+    betsTime();
+
+    deck.extract();
+    table.cards.push_back(deck.extract());
+    betsTime();
+
+    deck.extract();
+    table.cards.push_back(deck.extract());
+    betsTime();
+
+    reward();
     return 0;
 }
