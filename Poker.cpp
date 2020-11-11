@@ -81,7 +81,7 @@ public:
     Card cards[2];
     Combination comb;
     int bet = 0;
-    int cash = 1000;
+    int cash = 200;
     bool isDead = false;
     bool isFolded = false;
 
@@ -353,13 +353,21 @@ void betsTime()
     int currentPlayer = 0;
     bool turn = false;
     int loopCounter = 0;
+    int alive = 0;
+
+    for (int i = 0; i < playerNum; ++i)
+        if (!players[i].isFolded && !players[i].isDead)
+            ++alive;
     
     do
     {
         turn = false;
+        
         currentPlayer %= playerNum;
+        
 
-        if (!(players[currentPlayer].isDead || players[currentPlayer].isFolded))
+        if (!(players[currentPlayer].isDead || players[currentPlayer].isFolded) &&
+            players[currentPlayer].cash != 0 && alive > 1)
         {
             cout << currentPlayer+1 << " player's turn\n\n";
             cout << players[currentPlayer].cards[0].numstr << " of " <<
@@ -383,7 +391,7 @@ void betsTime()
             int action;
             cin >> action;
             //cout << '\n';
-            if (action == 0) players[currentPlayer].fold();
+            if (action == 0) { players[currentPlayer].fold(); --alive; }
             else if (action == 1) players[currentPlayer].callOrCheck(table);
             else if (action == 2)
             {
@@ -394,38 +402,43 @@ void betsTime()
             }
             cout << "_________________________________\n\n";
         }
+        cout << "";
         for (int i = 0; i < playerNum; ++i)
         {
-            if (players[i].bet != table.maxBet && !players[i].isFolded && !players[i].isDead)
-                turn = true;
+            if (!players[i].isFolded && !players[i].isDead)
+            {
+                if (players[i].bet != table.maxBet && players[i].cash != 0) turn = true;
+            }
         } 
         ++currentPlayer;
         if (currentPlayer == playerNum) ++loopCounter;
-    } while (turn || loopCounter == 0);
+    } while ((turn || loopCounter == 0) && alive > 1);
+    for (int i = 0; i < playerNum; ++i) players[i].bet = 0;
+    table.maxBet = 0;
 }
 
 void reward()
 {
     int best = -1;
     vector<int> bests;
-    for (int i = 1; i < playerNum; ++i)
+    for (int i = 0; i < playerNum; ++i)
     {
-        if (!(players[i].isDead && players[i].isFolded))
+        if (!(players[i].isDead || players[i].isFolded))
         {
             players[i].combInit(table);
             best = i;
         }
     }
 
-    for (int i = best+1; i < playerNum; ++i)
+    for (int i = 0; i < playerNum; ++i)
     {
-        if (!(players[i].isDead && players[i].isFolded) && compareComb(players[i].comb, players[best].comb) == 0)
+        if (!(players[i].isDead || players[i].isFolded) && compareComb(players[i].comb, players[best].comb) == 1)
             best = i;
     }
 
     for (int i = 0; i < playerNum; ++i)
     {
-        if (!(players[i].isDead && players[i].isFolded) && compareComb(players[i].comb, players[best].comb) == 2)
+        if (!(players[i].isDead || players[i].isFolded) && compareComb(players[i].comb, players[best].comb) == 2)
         {
             bests.push_back(i);
         }
@@ -434,28 +447,39 @@ void reward()
     for (int i = 0; i < bests.size(); ++i)
     {
         players[bests[i]].cash += table.bank/bests.size();
+        cout << "Winner: " << bests[i]+1 << " player\n";
+        cout << players[bests[i]].comb.name << '\n';
     }
 }
 
 int main()
 {
     deck.init();
-    deck.shuffle();
-
-    for (int i = 0; i < playerNum; ++i)
+    for (int i = 0; i < 10; i++)
     {
-        players[i].bet = 0;
-        for (int j = 0; j < 2; ++j)
-        {
-            players[i].cards[j] = deck.extract();
-        }
+        rand();
     }
-
+    
+    int alive = playerNum;
     int blind = 0, smallBlind = 1;
-    blind %= playerNum;
-    smallBlind %= playerNum;
+    while (alive > 1)
+    {
+        deck.shuffle();
+        cout << "New loop\n";
+        for (int i = 0; i < playerNum; ++i)
+        {
+            players[i].bet = 0;
+            for (int j = 0; j < 2; ++j)
+            {
+                players[i].cards[j] = deck.extract();
+            }
+        }
 
-    if (players[blind].cash >= blindCost)
+        
+        blind %= playerNum;
+        smallBlind %= playerNum;
+
+        if (players[blind].cash >= blindCost)
         {
             players[blind].bet = blindCost;
             players[blind].cash -= blindCost;
@@ -485,21 +509,36 @@ int main()
         if (blindCost/2 > table.maxBet)
                 table.maxBet = blindCost/2;
 
-    betsTime();
+        betsTime();
 
-    deck.extract();
-    for (int i = 0; i < 3; ++i)
+        deck.extract();
+        for (int i = 0; i < 3; ++i)
+            table.cards.push_back(deck.extract());
+        betsTime();
+
+        deck.extract();
         table.cards.push_back(deck.extract());
-    betsTime();
+        betsTime();
 
-    deck.extract();
-    table.cards.push_back(deck.extract());
-    betsTime();
+        deck.extract();
+        table.cards.push_back(deck.extract());
+        betsTime();
 
-    deck.extract();
-    table.cards.push_back(deck.extract());
-    betsTime();
+        reward();
 
-    reward();
+        for (int i = 0; i < playerNum; ++i)
+        {
+            players[i].isFolded = false;
+            if (!players[i].isDead && players[i].cash == 0)
+            {
+                players[i].isDead = true;
+                --alive;
+            }
+        }
+        ++blind;
+        ++smallBlind;
+        table.cards.resize(0);
+        table.bank = 0;
+    }
     return 0;
 }
