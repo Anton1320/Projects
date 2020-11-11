@@ -339,12 +339,11 @@ int compareComb(Combination a, Combination b) // 0 - a < b; 1 - a > b; 2 - a == 
     else return 0;
 }
 
-const int playerNum = 2;
+const int playerNum = 6;
 const int blindCost = 50;
 
 Deck deck;
-Player players[playerNum];
-//Computer bot;
+Computer players[playerNum];
 Table table;
 
 
@@ -452,8 +451,16 @@ void reward()
     }
 }
 
+
+
 int main()
 {
+
+    for (int i = 0; i < playerNum; ++i)
+    {
+        players[i].init();
+    }
+
     deck.init();
     for (int i = 0; i < 10; i++)
     {
@@ -465,7 +472,7 @@ int main()
     while (alive > 1)
     {
         deck.shuffle();
-        cout << "New loop\n";
+        cout << "New loop\n\n";
         for (int i = 0; i < playerNum; ++i)
         {
             players[i].bet = 0;
@@ -474,7 +481,6 @@ int main()
                 players[i].cards[j] = deck.extract();
             }
         }
-
         
         blind %= playerNum;
         smallBlind %= playerNum;
