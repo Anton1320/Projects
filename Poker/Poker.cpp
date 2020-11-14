@@ -83,8 +83,11 @@ public:
     Combination comb;
     int bet = 0;
     int cash = 200;
+    int lastAction;
     bool isDead = false;
     bool isFolded = false;
+    bool isBot = false;
+    string name = "Anton";
 
     void combInit(Table T)
     {
@@ -249,6 +252,29 @@ public:
         }
     }
 
+    void printInfo(Table table)
+    {
+        cout << name << " player's turn\n\n";
+        cout << cards[0].numstr << " of " <<
+                cards[0].suitstr << endl;
+        cout << cards[1].numstr << " of " <<
+                cards[1].suitstr << "\n\n";
+        if (table.cards.size() > 0)
+        {
+            cout << "Cards on table: \n";
+            for (int i = 0; i < table.cards.size(); ++i)
+            {
+                cout << table.cards[i].numstr << " of " <<
+                        table.cards[i].suitstr << endl;
+            }
+        }
+        cout << "Bank: " << table.bank << '\n';
+        cout << "Max bet is " << table.maxBet << "\n";
+        cout << "Your bet is " << bet << "\n";
+        cout << "Your cash is " << cash << "\n\n";
+        cout << "0 - fold\n1 - call or check\n2 - raise to <num>\n";
+    }
+
     void callOrCheck(Table &T)
     {
         if (bet < T.maxBet) // если колл
@@ -288,12 +314,22 @@ public:
     }
 
     void fold() { isFolded = true; }
+
+    void Action(Table &T, int action, int numBet = 0)
+    {
+        int loopCounter = 0;
+        if (action == 0) { fold(); }
+        else if (action == 1) callOrCheck(T);
+        else if (action == 2) raise(T, numBet);
+        lastAction = action;
+        //cout << "_________________________________\n\n";
+    }
 };
 
 class Computer: public Player
 {
 private:
-    vector<int> layers = {12, 10, 5}; // не знаю
+    vector<int> layers = {12, 10, 5};
     vector<vector<double>> NN;
     vector<vector<vector<double>>> W;
     int quality = 0;
@@ -317,8 +353,10 @@ public:
             }
         }
     }
+    long double activation(long double s)
+	{ return 1.0L / (1.0L + expl(-s)); }
 
-    int action(vector<long double> X)
+    int predict(vector<long double> X)
     {
         vector<vector<long double>> NN;
         vector<long double> Y;
@@ -378,76 +416,6 @@ Deck deck;
 Computer players[playerNum];
 Table table;
 
-
-void betsTime()
-{
-    int currentPlayer = 0;
-    bool turn = false;
-    int loopCounter = 0;
-    int alive = 0;
-
-    for (int i = 0; i < playerNum; ++i)
-        if (!players[i].isFolded && !players[i].isDead)
-            ++alive;
-    
-    do
-    {
-        turn = false;
-        
-        currentPlayer %= playerNum;
-        
-
-        if (!(players[currentPlayer].isDead || players[currentPlayer].isFolded) &&
-            players[currentPlayer].cash != 0 && alive > 1)
-        {
-            cout << currentPlayer+1 << " player's turn\n\n";
-            cout << players[currentPlayer].cards[0].numstr << " of " <<
-                    players[currentPlayer].cards[0].suitstr << endl;
-            cout << players[currentPlayer].cards[1].numstr << " of " <<
-                    players[currentPlayer].cards[1].suitstr << "\n\n";
-            if (table.cards.size() > 0)
-            {
-                cout << "Cards on table: \n";
-                for (int i = 0; i < table.cards.size(); ++i)
-                {
-                    cout << table.cards[i].numstr << " of " <<
-                            table.cards[i].suitstr << endl;
-                }
-            }
-            cout << "Bank: " << table.bank << '\n';
-            cout << "Max bet is " << table.maxBet << "\n";
-            cout << "Your bet is " << players[currentPlayer].bet << "\n";
-            cout << "Your cash is " << players[currentPlayer].cash << "\n\n";
-            cout << "0 - fold\n1 - call or check\n2 - raise to <num>\n";
-            int action;
-            cin >> action;
-            //cout << '\n';
-            if (action == 0) { players[currentPlayer].fold(); --alive; }
-            else if (action == 1) players[currentPlayer].callOrCheck(table);
-            else if (action == 2)
-            {
-                int num;
-                cout << "Your bet is ";
-                cin >> num;
-                players[currentPlayer].raise(table, num);
-            }
-            cout << "_________________________________\n\n";
-        }
-        cout << "";
-        for (int i = 0; i < playerNum; ++i)
-        {
-            if (!players[i].isFolded && !players[i].isDead)
-            {
-                if (players[i].bet != table.maxBet && players[i].cash != 0) turn = true;
-            }
-        } 
-        ++currentPlayer;
-        if (currentPlayer == playerNum) ++loopCounter;
-    } while ((turn || loopCounter == 0) && alive > 1);
-    for (int i = 0; i < playerNum; ++i) players[i].bet = 0;
-    table.maxBet = 0;
-}
-
 void reward()
 {
     int best = -1;
@@ -483,6 +451,11 @@ void reward()
     }
 }
 
+void distribution()
+{
+    
+}
+
 class Learning
 {
 private:
@@ -495,7 +468,10 @@ public:
         population.resize(popNum);
         newPop.resize(popNum);
     }
-    void game();
+    void game()
+    {
+
+    }
     void selection();
     void mutation();
     void hybridization();
@@ -563,20 +539,20 @@ int main()
         if (blindCost/2 > table.maxBet)
                 table.maxBet = blindCost/2;
 
-        betsTime();
+        //betsTime();
 
         deck.extract();
         for (int i = 0; i < 3; ++i)
             table.cards.push_back(deck.extract());
-        betsTime();
+        //betsTime();
 
         deck.extract();
         table.cards.push_back(deck.extract());
-        betsTime();
+        //betsTime();
 
         deck.extract();
         table.cards.push_back(deck.extract());
-        betsTime();
+        //betsTime();
 
         reward();
 
