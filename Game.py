@@ -104,8 +104,9 @@ class Enemy(Movable):
 player = Player((50, 50), 0.5, pygame.Surface((20, 20)))
 player.image.fill(GREEN)
 
-apple = Apple((100, 100), pygame.Surface((20, 20)))
-apple.image.fill(RED)
+appleSurface = pygame.Surface((20, 20))
+appleSurface.fill(RED)
+apples = [Apple((400, 500), appleSurface)for i in range(10)]
 
 font1 = pygame.font.Font(None, 30)
 score = font1.render('0', True, BLACK)
@@ -165,12 +166,6 @@ while running:
                 player.moveUp = False
             if event.key == pygame.K_DOWN:
                 player.moveDown = False
-    if player.collision(apple):
-        player.pickUp(apple)
-        spawnEnemy()
-        player.hp += 1
-        score = font1.render(str(player.score), True, BLACK)
-        hp = font1.render(str(player.hp), True, RED)
     if abs(bullet.startPos.x - bullet.pos.x) > bullet.range or\
         abs(bullet.startPos.y - bullet.pos.y) > bullet.range:
         bullet.remove()
@@ -178,6 +173,14 @@ while running:
         spawnEnemy()
         timer = 0
     sc.fill(CYAN)
+    for apple in apples:
+        if player.collision(apple):
+            player.pickUp(apple)
+            spawnEnemy()
+            player.hp += 1
+            score = font1.render(str(player.score), True, BLACK)
+            hp = font1.render(str(player.hp), True, RED)
+        apple.draw()
     for enemy in enemys:
         if enemy.collision(player):
             player.hp -= 5
@@ -186,19 +189,17 @@ while running:
             if player.hp <= 0: running = False
         if enemy.collision(bullet):
             enemys.remove(enemy)
-            player.score += 2
+            player.score += 5
             score = font1.render(str(player.score), True, BLACK)
             bullet.remove()
         if enemy.liveTimer > 10000:
             enemys.remove(enemy)
-
         enemy.move(player)
         enemy.draw()
     bullet.Move()
     bullet.draw()
     player.Move()
     player.draw()
-    apple.draw()
     sc.blit(score, (10, 10))
     sc.blit(hp, (770, 10))
     pygame.display.update()
