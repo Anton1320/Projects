@@ -116,7 +116,7 @@ bullet.image.fill(BLACK)
 
 enemySurface = pygame.Surface((20, 20))
 enemySurface.fill(BLUE)
-enemys = [Enemy((800, 600), 0.25, enemySurface)]
+enemys = [Enemy((800, 600), 0.2, enemySurface)]
 
 def spawnEnemy():
     r = random.randint(1, 4)
@@ -135,7 +135,7 @@ def spawnEnemy():
         pos[1] = random.randint(0, screenSize[1])
     es = pygame.Surface((20, 20))
     es.fill(BLUE)
-    enemys.append(Enemy((pos[0], pos[1]), 0.25, es))
+    enemys.append(Enemy((pos[0], pos[1]), 0.2, es))
 timer = 0
 
 running = True
@@ -174,7 +174,9 @@ while running:
     if abs(bullet.startPos.x - bullet.pos.x) > bullet.range or\
         abs(bullet.startPos.y - bullet.pos.y) > bullet.range:
         bullet.remove()
-    
+    if timer >= 100000/(player.score+1):
+        spawnEnemy()
+        timer = 0
     sc.fill(CYAN)
     for enemy in enemys:
         if enemy.collision(player):
