@@ -65,6 +65,7 @@ class Bullet(Movable):
     def __init__(self, pos, image, speed):
         Movable.__init__(self, pos, image, speed)
         self.startPos = Coord(pos[0], pos[1])
+        self.direction = [False, False, False, False]#Up Down Right Left
         self.range = 400
 
     def remove(self):
@@ -86,6 +87,7 @@ class Player(Movable):
         bullet.moveUp = self.moveUp
         bullet.moveLeft = self.moveLeft
         bullet.moveRight = self.moveRight
+        bullet.moveUp, bullet.moveDown, bullet.moveRight, bullet.moveLeft = bullet.direction
 
     def pickUp(self, apple:Apple):
         self.score += 1
@@ -149,12 +151,16 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RIGHT:
                 player.moveRight = True
+                bullet.direction = [False, False, True, False]
             if event.key == pygame.K_LEFT:
                 player.moveLeft = True
+                bullet.direction = [False, False, False, True]
             if event.key == pygame.K_UP:
                 player.moveUp = True
+                bullet.direction = [True, False, False, False]
             if event.key == pygame.K_DOWN:
                 player.moveDown = True
+                bullet.direction = [False, True, False, False]
             if event.key == pygame.K_LCTRL:
                 player.shoot(bullet)
         if event.type == pygame.KEYUP:
